@@ -2,16 +2,30 @@
 #include <SoftwareSerial.h>
 #include <dht.h>
 
+#define light_outside 3
+#define light_inside 4
+
+
 // Global variables
 boolean newMessage = false;
+float min_temp_inside_value = 20;
+float max_temp_inside_value = 24;
+float current_temperature_inside = 0;
+float current_temperature_outside = 0;
+
 
 // Working with memory
 const byte numChars = 20;
 char message[numChars];
 char tempChars[numChars];
 
+const char command_min_temperature_inside[9] = "MIN TEMP";
+const char command_max_temperature_inside[9] = "MAX TEMP";
+
+
 // Commands
 const char command_info[5] = "INFO";
+
 
 // Functions
 void GsmConnected();
@@ -22,8 +36,13 @@ void UpdateSIM900Serial();
 void UpdateSerial();
 void DelAllSMS();
 
+void SetCurrentTemperature();
+void ValidateTemperatureInside();
+bool IfSetTemperatureInsideMessage();
+
 
 SoftwareSerial SIM900(7, 8);
+dht temperature_sensor;
 
 void setup()
 {
@@ -36,15 +55,20 @@ void setup()
 
 void loop()
 {
-  // test
+  SetCurrentTemperature();
   ReadMessage();
   Serial.println(message);
 
-  if (newMessage)
-  {
-    SendMessage("test");
-    newMessage = false;
-  }
+  if (!newMessage)
+    ;
+  else if (IfSetTemperatureInsideMessage())
+    ;
+  else
+    SendMessage("Unknown command");
+
+  newMessage = false;
+
+  ValidateTemperatureInside();
 
   Serial.println("working");
   UpdateSerial();
@@ -53,7 +77,49 @@ void loop()
 
 
 //----------------------------------------------
-// Message validation commands
+// Base commands
+//----------------------------------------------
+
+void SetCurrentTemperature()
+{
+  temperature_sensor.read11(temperature_inside);
+  current_temperature_inside = temperature_sensor.temperature;
+
+  temperature_sensor.read11(temperature_outside);
+  current_temperature_outside = temperature_sensor.temperature;
+}
+
+void ValidateTemperatureInside()
+{
+  unsigned long currentMillis = millis();
+
+  if (currentMillis < delayUntilMillis)
+    return;
+
+  if (current_temperature_inside > max_temp_inside_value)
+    digitalWrite(actuator, LOW);
+
+  else if (current_temperature_inside < min_temp_inside_value)
+    digitalWrite(actuator, HIGH);
+
+  delayUntilMillis = currentMillis + 5000;
+}
+
+bool IfSetTemperatureInsideMessage()
+{
+  if (StrContains(message, command_min_temperature_inside))
+    min_temp_inside_value = GetNumberFromMessage();
+  else if (StrContains(message, command_max_temperature_inside))
+    max_temp_inside_value = GetNumberFromMessage();
+  else
+    return false;
+
+  SendMessage(message);
+  return true;
+}
+
+//----------------------------------------------
+// Analyzing message
 //----------------------------------------------
 
 float GetNumberFromMessage()
@@ -70,6 +136,32 @@ float GetNumberFromMessage()
   }
 
   return 0;
+}
+
+
+//----------------------------------------------
+// Utils functions
+//----------------------------------------------
+
+bool StrContains(char *str, const char *sfind)
+{
+  unsigned int found = 0;
+  unsigned int index = 0;
+
+  while (index < strlen(str))
+  {
+    if (str[index] == sfind[found])
+    {
+      found++;
+      if (strlen(sfind) == found)
+        return true;
+    }
+    else
+      found = 0;
+    index++;
+  }
+
+  return false;
 }
 
 
