@@ -3,6 +3,8 @@
 #include <dht.h>
 
 
+#define water_level_detector A0
+
 #define tv 2
 #define light_outside 3
 #define light_inside 4
@@ -22,7 +24,7 @@ bool current_light_outside = false;
 bool current_light_inside = false;
 bool current_tv = false;
 bool current_gate = false;
-
+int max_water_level_value = 300;
 
 // Working with memory
 const byte numChars = 20;
@@ -74,6 +76,10 @@ void setup()
 
 void loop()
 {
+  if (analogRead(water_level_detector) > max_water_level_value)
+    SendMessage("Water detected");
+
+
   SetCurrentTemperature();
   ReadMessage();
   Serial.println(message);
