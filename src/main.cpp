@@ -6,6 +6,7 @@
 #define tv 2
 #define light_outside 3
 #define light_inside 4
+#define gate 5
 #define temperature_inside 12
 #define temperature_outside 13
 
@@ -20,6 +21,7 @@ float current_temperature_outside = 0;
 bool current_light_outside = false;
 bool current_light_inside = false;
 bool current_tv = false;
+bool current_gate = false;
 
 
 // Working with memory
@@ -34,6 +36,7 @@ const char command_light_inside[13] = "LIGHT INSIDE";
 const char command_min_temperature_inside[9] = "MIN TEMP";
 const char command_max_temperature_inside[9] = "MAX TEMP";
 const char command_tv[3] = "TV";
+const char command_gate[7] = "GATE";
 
 
 // Functions
@@ -63,7 +66,8 @@ void setup()
   pinMode(light_inside, OUTPUT);
   pinMode(light_outside, OUTPUT);
   pinMode(tv, OUTPUT);
-
+  pinMode(gate, OUTPUT);
+  
   GsmConnected();
   delay(1000);
 }
@@ -83,6 +87,8 @@ void loop()
   else if (IfOnOffMessage(command_light_inside, light_inside, current_light_inside))
     ;
   else if (IfOnOffMessage(command_tv, tv, current_tv))
+    ;
+  else if (IfOnOffMessage(command_gate, gate, current_gate))
     ;
   else
     SendMessage("Unknown command");
