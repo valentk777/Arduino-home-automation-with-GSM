@@ -4,6 +4,8 @@
 
 #define light_outside 3
 #define light_inside 4
+#define temperature_inside 12
+#define temperature_outside 13
 
 
 // Global variables
@@ -12,6 +14,8 @@ float min_temp_inside_value = 20;
 float max_temp_inside_value = 24;
 float current_temperature_inside = 0;
 float current_temperature_outside = 0;
+bool current_light_outside = false;
+bool current_light_inside = false;
 
 
 // Working with memory
@@ -19,12 +23,12 @@ const byte numChars = 20;
 char message[numChars];
 char tempChars[numChars];
 
-const char command_min_temperature_inside[9] = "MIN TEMP";
-const char command_max_temperature_inside[9] = "MAX TEMP";
-
 
 // Commands
-const char command_info[5] = "INFO";
+const char command_light_outside[14] = "LIGHT OUTSIDE";
+const char command_light_inside[13] = "LIGHT INSIDE";
+const char command_min_temperature_inside[9] = "MIN TEMP";
+const char command_max_temperature_inside[9] = "MAX TEMP";
 
 
 // Functions
@@ -40,6 +44,8 @@ void SetCurrentTemperature();
 void ValidateTemperatureInside();
 bool IfSetTemperatureInsideMessage();
 
+bool IfOnOffMessage(const char device[], const byte &device_pin, bool &pointer_to_current_value);
+bool StrContains(char *str, const char *sfind);
 
 SoftwareSerial SIM900(7, 8);
 dht temperature_sensor;
@@ -48,6 +54,9 @@ void setup()
 {
   Serial.begin(9600);
   SIM900.begin(9600);
+
+  pinMode(light_inside, OUTPUT);
+  pinMode(light_outside, OUTPUT);
 
   GsmConnected();
   delay(1000);
@@ -63,6 +72,10 @@ void loop()
     ;
   else if (IfSetTemperatureInsideMessage())
     ;
+  else if (IfOnOffMessage(command_light_outside, light_outside, current_light_outside))
+    ;
+  else if (IfOnOffMessage(command_light_inside, light_inside, current_light_inside))
+    ;
   else
     SendMessage("Unknown command");
 
@@ -70,7 +83,7 @@ void loop()
 
   ValidateTemperatureInside();
 
-  Serial.println("working");
+  Serial.println("Working");
   UpdateSerial();
   delay(1000);
 }
@@ -138,6 +151,31 @@ float GetNumberFromMessage()
   return 0;
 }
 
+bool IfOnOffMessage(const char device[], const byte &device_pin, bool &pointer_to_current_value)
+{
+  if (!StrContains(message, device)) // not found
+    return false;
+
+  if (StrContains(message, "ON"))
+  {
+    digitalWrite(device_pin, HIGH);
+    SendMessage(message);
+    pointer_to_current_value = true;
+    return true;
+  }
+  else if (StrContains(message, "OFF"))
+  {
+    digitalWrite(device_pin, LOW);
+    SendMessage(message);
+    pointer_to_current_value = false;
+    return true;
+  }
+  else
+  {
+    SendMessage("Message is not recognized!");
+    return true;
+  }
+}
 
 //----------------------------------------------
 // Utils functions
@@ -200,7 +238,7 @@ void ReadMessage()
         ndx++;
         if (ndx >= numChars)
         {
-          Serial.println("Warning: message to long!");
+          Serial.println("Message to long!");
           ndx = numChars - 1;
         }
       }
