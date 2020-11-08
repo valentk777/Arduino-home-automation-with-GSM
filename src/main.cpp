@@ -4,6 +4,7 @@
 
 
 #define water_level_detector A0
+#define smoke_detector A1
 
 #define tv 2
 #define light_outside 3
@@ -13,18 +14,23 @@
 #define temperature_outside 13
 
 
+// User configurable values
+float min_temp_inside_value = 20;
+float max_temp_inside_value = 24;
+int max_water_level_value = 300;
+int max_smoke_detector_value = 300;
+
+
 // Global variables
 unsigned long delayUntilMillis = millis();
 boolean newMessage = false;
-float min_temp_inside_value = 20;
-float max_temp_inside_value = 24;
 float current_temperature_inside = 0;
 float current_temperature_outside = 0;
 bool current_light_outside = false;
 bool current_light_inside = false;
 bool current_tv = false;
 bool current_gate = false;
-int max_water_level_value = 300;
+
 
 // Working with memory
 const byte numChars = 20;
@@ -71,7 +77,7 @@ void setup()
   pinMode(gate, OUTPUT);
   
   GsmConnected();
-  delay(1000);
+  delay(1000); // Needed for smoke sensor
 }
 
 void loop()
@@ -79,6 +85,8 @@ void loop()
   if (analogRead(water_level_detector) > max_water_level_value)
     SendMessage("Water detected");
 
+  if (analogRead(smoke_detector) > max_smoke_detector_value)
+    SendMessage("Smoke detected");
 
   SetCurrentTemperature();
   ReadMessage();
