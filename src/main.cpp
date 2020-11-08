@@ -39,6 +39,7 @@ char tempChars[numChars];
 
 
 // Commands
+const char command_info[5] = "INFO";
 const char command_light_outside[14] = "LIGHT OUTSIDE";
 const char command_light_inside[13] = "LIGHT INSIDE";
 const char command_min_temperature_inside[9] = "MIN TEMP";
@@ -59,6 +60,7 @@ void DelAllSMS();
 void SetCurrentTemperature();
 void ValidateTemperatureInside();
 bool IfSetTemperatureInsideMessage();
+bool IfGetStatusMessage();
 
 bool IfOnOffMessage(const char device[], const byte &device_pin, bool &pointer_to_current_value);
 bool StrContains(char *str, const char *sfind);
@@ -103,6 +105,8 @@ void loop()
   else if (IfOnOffMessage(command_tv, tv, current_tv))
     ;
   else if (IfOnOffMessage(command_gate, gate, current_gate))
+    ;
+  else if (IfGetStatusMessage())
     ;
   else
     SendMessage("Unknown command");
@@ -157,6 +161,33 @@ bool IfSetTemperatureInsideMessage()
 
   SendMessage(message);
   return true;
+}
+
+bool IfGetStatusMessage()
+{
+  if (StrContains(message, command_info))
+  {
+    // SendMessage code for memory saving
+    SIM900.println("AT+CMGS=\"+37060000000\"\r");
+    delay(1000);
+    SIM900.print("INFO : \nTemperature outside: ");
+    SIM900.print(current_temperature_outside);
+    SIM900.print("\nTemperature inside: ");
+    SIM900.print(current_temperature_inside);
+    SIM900.print("\nTV status: ");
+    SIM900.print(current_tv);
+    SIM900.print("\nLight outside status: ");
+    SIM900.print(current_light_outside);
+    SIM900.print("\nLight inside status: ");
+    SIM900.print(current_light_inside);
+    delay(1000);
+    SIM900.write(26);
+    delay(2000);
+    UpdateSIM900Serial();
+    return true;
+  }
+
+  return false;
 }
 
 //----------------------------------------------
